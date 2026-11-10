@@ -46,6 +46,15 @@ export function usePriceHistory(serviceId: string | undefined, clinicId?: string
   })
 }
 
+export function useClinicBenchmark(id: string | undefined) {
+  return useQuery({
+    queryKey: ['clinic-benchmark', id],
+    queryFn: () => api.getClinicBenchmark(id!),
+    enabled: Boolean(id),
+    staleTime: 5 * 60_000,
+  })
+}
+
 export function useClinicsMap(city?: string) {
   return useQuery({
     queryKey: ['clinics-map', city],

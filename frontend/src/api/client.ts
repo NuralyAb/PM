@@ -1,4 +1,5 @@
 import type {
+  BenchmarkResponse,
   AdminStats,
   Alert,
   BasketResponse,
@@ -82,6 +83,16 @@ export const api = {
   /** GET /api/clinics/{id} — clinic profile + all its offers. */
   getClinic(id: string): Promise<ClinicDetail> {
     return get<ClinicDetail>(`/clinics/${id}`)
+  },
+
+  /** GET /api/clinics/{id}/benchmark — clinic prices vs. its city market (CR-01). */
+  getClinicBenchmark(id: string): Promise<BenchmarkResponse> {
+    return get<BenchmarkResponse>(`/clinics/${id}/benchmark`)
+  },
+
+  /** Download URL of the same benchmark as CSV. */
+  clinicBenchmarkCsvUrl(id: string): string {
+    return `${BASE}/api/clinics/${id}/benchmark.csv`
   },
 
   /** GET /api/services/{id}/price-history?clinic_id= */

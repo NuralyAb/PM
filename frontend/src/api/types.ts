@@ -398,3 +398,34 @@ export interface LogsQuery {
   since_minutes?: number
   limit?: number
 }
+
+// --- Clinic price benchmark (Change Request CR-01) ---
+export interface BenchmarkItem {
+  service_id: string
+  service_name_norm: string
+  category: string
+  price_kzt: number
+  clinics_compared: number
+  city_min: number
+  city_median: number
+  city_max: number
+  rank: number
+  diff_vs_median_pct: number
+  position: 'cheapest' | 'below_median' | 'at_median' | 'above_median' | 'most_expensive' | 'no_competitors'
+}
+
+export interface BenchmarkResponse {
+  clinic_id: string
+  clinic_name: string
+  city: string
+  items: BenchmarkItem[]
+  summary: {
+    services_total: number
+    services_compared: number
+    cheapest_count: number
+    below_median_count: number
+    above_median_count: number
+    most_expensive_count: number
+    avg_diff_vs_median_pct: number
+  }
+}
