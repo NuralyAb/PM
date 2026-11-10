@@ -106,6 +106,9 @@ export function SearchResultsPage() {
   }
 
   const { data, isLoading, isError } = useOffers(query)
+  // An inverted range (min > max) is rejected by the API with 422 — explain it instead of
+  // showing a generic "no offers" / "couldn't load" state.
+  const priceRangeInvalid = priceMin != null && priceMax != null && priceMin > priceMax
 
   function toggleCompare(o: Offer) {
     setSelected((prev) => {
@@ -329,6 +332,11 @@ export function SearchResultsPage() {
                   className="w-full border-outline-variant rounded-lg font-body-sm bg-surface-container-lowest dark:bg-surface-dim text-on-surface focus:ring-secondary focus:border-secondary"
                 />
               </div>
+              {priceRangeInvalid && (
+                <p role="alert" className="mt-2 font-body-sm text-error">
+                  {t('Minimum price must not exceed maximum price.')}
+                </p>
+              )}
             </div>
 
             {/* Result turnaround (real lab duration data) */}
@@ -487,8 +495,27 @@ export function SearchResultsPage() {
             </div>
           )}
 
+          {/* Invalid price range */}
+          {priceRangeInvalid && (
+            <EmptyState
+              icon="tune"
+              title={t('Invalid price range')}
+              description={t('The minimum price is greater than the maximum price.')}
+              action={
+                <Button
+                  variant="primary"
+                  onClick={() =>
+                    patchParams({ price_min: String(priceMax), price_max: String(priceMin), page: undefined })
+                  }
+                >
+                  {t('Swap values')}
+                </Button>
+              }
+            />
+          )}
+
           {/* Error */}
-          {!isLoading && isError && (
+          {!isLoading && isError && !priceRangeInvalid && (
             <EmptyState
               icon="error"
               title={t("Couldn't load offers")}
