@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +17,7 @@ from app.models import Clinic, PriceHistory, ServiceCatalog, ServiceOffer, Subsc
 from app.schemas import (
     BasketRequest,
     BasketResponse,
+    BenchmarkResponse,
     ClinicDetail,
     ClinicPin,
     ClinicsMapResponse,
@@ -26,7 +27,7 @@ from app.schemas import (
     SubscriptionCreate,
     SubscriptionOut,
 )
-from app.services import queries
+from app.services import benchmark, queries
 from app.services.basket import basket_cheapest
 from app.services.search import attach_offer_stats, search_services
 
@@ -146,6 +147,29 @@ async def offers(
     )
     await cache_set(cache_key, resp.model_dump(mode="json"), settings.cache_ttl_offers)
     return resp
+
+
+@router.get("/clinics/{clinic_id}/benchmark", response_model=BenchmarkResponse)
+async def clinic_benchmark(clinic_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> BenchmarkResponse:
+    """CR-01: how each of the clinic's prices compares with the same service in its city."""
+    report = await benchmark.clinic_benchmark(db, clinic_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Clinic not found")
+    return report
+
+
+@router.get("/clinics/{clinic_id}/benchmark.csv")
+async def clinic_benchmark_csv(clinic_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> Response:
+    """CR-01: the same report as a CSV file for the clinic's pricing team (opens in Excel)."""
+    report = await benchmark.clinic_benchmark(db, clinic_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Clinic not found")
+    # UTF-8 BOM so Excel shows Cyrillic service names correctly
+    return Response(
+        content="﻿" + benchmark.to_csv(report),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="price-benchmark-{clinic_id}.csv"'},
+    )
 
 
 @router.get("/clinics/{clinic_id}", response_model=ClinicDetail)
