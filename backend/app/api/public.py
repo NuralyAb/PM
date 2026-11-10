@@ -191,9 +191,29 @@ async def basket(payload: BasketRequest, db: AsyncSession = Depends(get_db)) -> 
 
 @router.post("/subscriptions", response_model=SubscriptionOut)
 async def subscribe(payload: SubscriptionCreate, db: AsyncSession = Depends(get_db)) -> SubscriptionOut:
-    sub = Subscription(
-        email=str(payload.email), service_id=payload.service_id, clinic_id=payload.clinic_id
+    """Track a service (optionally at one clinic) for price-drop emails.
+
+    Validates that the service/clinic exist and is idempotent: the same email
+    tracking the same service+clinic gets the existing subscription back instead
+    of a duplicate row (which would send duplicate emails).
+    """
+    if await db.get(ServiceCatalog, payload.service_id) is None:
+        raise HTTPException(status_code=404, detail="Service not found")
+    if payload.clinic_id is not None and await db.get(Clinic, payload.clinic_id) is None:
+        raise HTTPException(status_code=404, detail="Clinic not found")
+
+    email = str(payload.email).strip().lower()
+    existing_q = select(Subscription).where(
+        func.lower(Subscription.email) == email,
+        Subscription.service_id == payload.service_id,
+        Subscription.clinic_id.is_(None) if payload.clinic_id is None
+        else Subscription.clinic_id == payload.clinic_id,
     )
+    existing = (await db.execute(existing_q)).scalars().first()
+    if existing is not None:
+        return SubscriptionOut(ok=True, id=str(existing.id), already_subscribed=True)
+
+    sub = Subscription(email=email, service_id=payload.service_id, clinic_id=payload.clinic_id)
     db.add(sub)
     await db.commit()
     await db.refresh(sub)

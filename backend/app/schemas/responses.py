@@ -123,6 +123,8 @@ class SubscriptionCreate(BaseModel):
 class SubscriptionOut(BaseModel):
     ok: bool = True
     id: str
+    # True when the same email already tracks this service/clinic — no duplicate row is created.
+    already_subscribed: bool = False
 
 
 # --- Admin ---
