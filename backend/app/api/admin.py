@@ -352,4 +352,7 @@ async def resolve_unmatched(
     item.status = "resolved"
     item.suggested_id = payload.service_id
     await db.commit()
+    # Newly attached offers must show up in search/autocomplete right away,
+    # not after the cache TTL expires (same as the AI-suggestion apply path).
+    invalidate_cache()
     return {"ok": True, "resolved": str(item_id), "linked_to": str(payload.service_id)}
