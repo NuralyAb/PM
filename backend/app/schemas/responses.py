@@ -114,6 +114,44 @@ class PriceHistoryResponse(BaseModel):
     points: list[PriceHistoryPoint]
 
 
+BenchmarkPosition = Literal[
+    "cheapest", "below_median", "at_median", "above_median", "most_expensive", "no_competitors"
+]
+
+
+class BenchmarkItem(BaseModel):
+    """One service of a clinic compared with the same service in its city (CR-01)."""
+    service_id: str
+    service_name_norm: str
+    category: str
+    price_kzt: float
+    clinics_compared: int
+    city_min: float
+    city_median: float
+    city_max: float
+    rank: int  # 1 = cheapest in the city
+    diff_vs_median_pct: float
+    position: BenchmarkPosition
+
+
+class BenchmarkSummary(BaseModel):
+    services_total: int
+    services_compared: int  # services that at least one other clinic in the city also offers
+    cheapest_count: int
+    below_median_count: int
+    above_median_count: int
+    most_expensive_count: int
+    avg_diff_vs_median_pct: float
+
+
+class BenchmarkResponse(BaseModel):
+    clinic_id: str
+    clinic_name: str
+    city: str
+    items: list[BenchmarkItem]
+    summary: BenchmarkSummary
+
+
 class SubscriptionCreate(BaseModel):
     email: EmailStr
     service_id: uuid.UUID
