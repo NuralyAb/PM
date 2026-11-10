@@ -125,7 +125,11 @@ export const api = {
   },
 
   /** POST /api/subscriptions — track a service/clinic price. */
-  async subscribe(email: string, serviceId: string, clinicId?: string): Promise<{ ok: boolean }> {
+  async subscribe(
+    email: string,
+    serviceId: string,
+    clinicId?: string,
+  ): Promise<{ ok: boolean; id: string; already_subscribed: boolean }> {
     const res = await fetch(`${BASE}/api/subscriptions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
