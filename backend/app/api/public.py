@@ -112,6 +112,10 @@ async def offers(
     page_size: int = Query(20, ge=1, le=100),  # cap per TZ §11
     db: AsyncSession = Depends(get_db),
 ) -> OffersResponse:
+    if price_min is not None and price_max is not None and price_min > price_max:
+        # An inverted range used to return an empty 200 that looked like "no clinics".
+        raise HTTPException(status_code=422, detail="price_min must be less than or equal to price_max")
+
     # Resolve a free-text q to a service_id (best lexical hit) when service_id absent.
     if service_id is None and q:
         hits = await search_services(db, q, mode="hybrid", limit=1)
